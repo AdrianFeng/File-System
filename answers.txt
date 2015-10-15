@@ -1,0 +1,107 @@
+
+
+# Partner 1
+Name: Zhen Feng
+Email: patrickfeng568@gmail.com
+
+# Partner 2 
+Name: Yi Wang
+Email: sky.wang@ucla.edu
+
+# Extra credit problems
+#Extra credit problem: none
+
+# Add any other information you'd like us to know below this line.
+
+Answer for lab3 Notes question
+
+
+Question on the slides 
+
+1.Q: How big should our inode table be, in blocks, to maximize the number of files the 
+file system can hold?
+
+	according to the question, 1 sector is 510 B and so we have a equation 
+	8*510 + 8*510+4*N + 256*N+ 3*N*510*8 = 2*(1000)^3
+	N= 160000
+	so we get Inode table is 40960000B
+2. Q: How can you delete a file (directory entry) from a directory without introducing 
+	a gap ?
+	
+	A:Basically, after deleting a file,there will be a gap in the block, then we can just 
+	move the directory entry content at the bottom of directory to that entry whose content 
+	was just deleted to fill up that gap. Since each entry is equal size (128 bytes), so 
+	the gap will be filled up completely. Also the order of the content actually doesn't 
+	matter and that is why we can shuffle the content around to the fill up the gap. 
+	
+3.Q: can't (in ext4, anyway) hard link a directory—why not?
+  
+  A: No you can't. Since by doing that, a infinite file searching loop might be created 
+  and  that is forbidden.
+
+4.Q: Also in ext4 it's not possible to hard link across file systems—why not?
+
+  A: Since the name space of a file system is file system specific. So there will
+  possibly be a inode number confilct between two file system, therefore people can
+  not just use hard link accross the file system.
+
+Question on the code-- ospfsmod.c
+
+1. Q:What should be done in the first exercise if (*fpos == oi_size)?
+	
+   A:(*fpos == oi_size) just means that the current file cursor has reached the end of 
+   the file. Therefore in ospfs_read(...), if the program meets (*fpos == oi_size), then
+   it should just return since it is at end of a file and there is no content any more. 
+
+2. Q: In ospfsmod.c, Lines 469–470: When does this happen?
+
+   A: When a directory entry is deleted, which means its content should never be 
+   referenced by this entry any more, then the program will set the inode number inside 
+   it as zero, which makes this directory entry blank. Also if this directory entry 
+   is between other entries, then there will be a gap. That is why we need to skip it to
+   just ignore it.
+   
+3. Q:Line 621: What if the "offset of the relevant indirect block" is 0?
+ How do we know whether to use the indirect block or the indirect2 block?
+ 
+ 
+  A: From the commment above, we know that the file block is zero-based. Therefore, 
+  "offset of the relevant indirect block is 0 " just means the block is the first block of
+  the relevant indirect block within the doubly indirect block.
+  
+  
+4. Q:This seems kind of slow. Why can't you add a lot at a time?
+
+   A: Since the free blocks inside our file system are not consecutive. The program
+   use them by using the pointer, so it can not just allocate a whole bunch of contiguous
+   blocks at one time. It can only allocate one at a time.
+   
+5. Q: Last sentence of 669–673: When might this case occur?
+
+  A: Since the file allocates blocks one at a time until it has what it needs, three 
+  blocks will need allocting to just create a one actual file block when the double
+  indirect blocks begin to be used. That is where " as many as three disk bocks" comes 
+  form. Then one thing which might happen is that there will be no free block any more 
+  when allocating the third file blocks. Then we should stop allocating since the
+  disk is full. So, the two block allocated before are just helper blocks, not the actual 
+  file blocks. Then these two should be freed. 
+  
+6. Q:Lines 759–761: What values do add_block() and remove_block() set it to?
+	
+   A: As I mentioned above, there might be some extra helper blocks allocated to store the 
+   block number to construct the indirect block and double indirect block system when a 
+   file size is increasing or decreasing. Those blocks should not contribute to the 
+   actual files blocks. However program still need to allocate them or deallocate them 
+   by calling add_block() or remove_block() and each time these two functions get called 
+   the file size will be updated to make them serve in general case. That is why file 
+   size updated by calling those two functions is not accurate. That is why we should 
+   change the size value to the correct one at the end of the change_size() function.
+   
+7. Q:Line 1038: -ENOSPC is returned if the disk is full and the file can't be created. 
+If we're linking a file, since it already exists, when could this case happen? 
+(It can happen.)
+
+	A: Even the file itself exists, however we still need to create a new file reference 
+	which is a new directory entry to record that actual data's inode number and a new
+	reference name. Therefore if the blocks that holds the content of the directory are 
+	full, program should still allocate new block then the -ENOSPC will be met.
